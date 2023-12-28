@@ -1,5 +1,6 @@
 import os
 import logging
+import pytest
 import churn_library_solution as cls
 
 
@@ -8,6 +9,11 @@ logging.basicConfig(
     level = logging.INFO,
     filemode='w',
     format='%(name)s - %(levelname)s - %(message)s')
+
+@pytest.fixture(scope="module")
+def import_data():
+    return cls.import_data
+
 
 def test_import(import_data):
 	'''
