@@ -4,6 +4,5 @@ customer_churn
 Guide.ipynb
 churn_notebook.ipynb
 data/
-logs/
 models/
 requirements_py3.6.txt
