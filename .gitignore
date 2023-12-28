@@ -1,8 +1,9 @@
 .idea/
 __pycache__/
-customer_churn
 Guide.ipynb
 churn_notebook.ipynb
+customer_churn.py
+churn_script_logging_and_tests.py
 data/
 models/
 requirements_py3.6.txt
