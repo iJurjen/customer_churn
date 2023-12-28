@@ -2,8 +2,7 @@
 __pycache__/
 Guide.ipynb
 churn_notebook.ipynb
-customer_churn.py
-churn_script.py
+churn_library.py
 churn_script_logging_and_tests.py
 data/
 models/
