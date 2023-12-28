@@ -1,6 +1,7 @@
 import os
 import logging
-import churn_library_solution as cls
+#import churn_library_solution as cls
+from churn_library import import_data
 
 logging.basicConfig(
     filename='./logs/churn_library.log',
@@ -52,12 +53,4 @@ def test_train_models(train_models):
 
 
 if __name__ == "__main__":
-	pass
-
-
-
-
-
-
-
-
+	test_import(import_data)
