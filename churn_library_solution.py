@@ -3,14 +3,14 @@
 
 # import libraries
 import os
-
 import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
 
-os.environ['QT_QPA_PLATFORM']='offscreen'
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
 
-
-def import_data(pth):
+def import_data(pth: Path) -> pd.DataFrame:
     """
     returns dataframe for the csv found at pth
 
@@ -23,7 +23,7 @@ def import_data(pth):
     return df
 
 
-def perform_eda(df):
+def perform_eda(df: pd.DataFrame) -> None:
     """
     perform eda on df and save figures to images folder
     input:
@@ -32,13 +32,28 @@ def perform_eda(df):
     output:
             None
     """
-    pass
+    df['Churn'] = df['Attrition_Flag'].apply(
+        lambda val: 0 if val == "Existing Customer" else 1)
+    plt.figure(figsize=(20, 10))
+    df['Churn'].hist()
+
+    # Ensure the "images" folder exists
+    images_folder = "./images/eda/"
+    os.makedirs(images_folder, exist_ok=True)
+
+    # Save the figure to the "images" folder
+    image_path = os.path.join(images_folder, "churn_histogram.png")
+    plt.savefig(image_path)
+
+    # Close the plot to release resources
+    plt.close()
 
 
 def encoder_helper(df, category_lst, response):
     """
     helper function to turn each categorical column into a new column with
-    propotion of churn for each category - associated with cell 15 from the notebook
+    propotion of churn for each category - associated with cell 15 from the
+    notebook
 
     input:
             df: pandas dataframe
@@ -63,6 +78,7 @@ def perform_feature_engineering(df, response):
               y_train: y training data
               y_test: y testing data
     """
+
 
 def classification_report_image(y_train,
                                 y_test,
@@ -99,6 +115,7 @@ def feature_importance_plot(model, X_data, output_pth):
              None
     """
     pass
+
 
 def train_models(X_train, X_test, y_train, y_test):
     """

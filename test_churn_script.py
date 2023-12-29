@@ -1,6 +1,12 @@
+import os
 import logging
 import pytest
 import churn_library_solution as cls
+from datetime import datetime
+
+
+data_path = "./data/bank_data.csv"
+eda_image_path = "./images/eda/churn_histogram.png"
 
 
 logging.basicConfig(
@@ -15,13 +21,22 @@ def import_data():
     return cls.import_data
 
 
+@pytest.fixture(scope="module")
+def perform_eda():
+    return cls.perform_eda
+
+
+def run_tests():
+    logging.info("Starting tests at %s", datetime.now())
+
+
 def test_import(import_data):
     """
     test data import - this example is completed for you to assist with the
     other test functions
     """
     try:
-        df = import_data("./data/bank_data.csv")
+        df = import_data(data_path)
         logging.info("Testing import_data: SUCCESS")
     except FileNotFoundError as err:
         logging.error("Testing import_eda: The file wasn't found")
@@ -35,12 +50,28 @@ def test_import(import_data):
                       "rows and columns")
         raise err
 
+    try:
+        assert df.isnull().sum().sum() == 0
+    except AssertionError as err:
+        logging.error("Testing import_data: The file has missing values")
+        raise err
+
+    #import_data.config.cache.set('cache_df', df)
+    return df
+
 
 @pytest.mark.xfail()
 def test_eda(perform_eda):
     """
     test perform eda function
     """
+    #df = import_data.config.cache.get('cache_df', None)
+    try:
+        perform_eda(data)
+        assert os.path.exists(eda_image_path)
+        logging.info(f"EDA completed. Figure saved to: {eda_image_path}")
+    except:
+        logging.error("EDA failed")
 
 
 @pytest.mark.xfail()
@@ -65,4 +96,7 @@ def test_train_models(train_models):
 
 
 if __name__ == "__main__":
-    test_import(cls.import_data)
+    run_tests()
+    data = test_import(cls.import_data)
+    print(data.head())
+    test_eda(cls.perform_eda)

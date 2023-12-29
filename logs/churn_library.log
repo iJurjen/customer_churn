@@ -1,1 +1,3 @@
+root - INFO - Starting tests at 2023-12-29 12:29:59.443674
 root - INFO - Testing import_data: SUCCESS
+root - INFO - EDA completed. Figure saved to: ./images/eda/churn_histogram.png
