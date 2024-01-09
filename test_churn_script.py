@@ -3,10 +3,7 @@ import logging
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
-
-
-data_path = "./data/bank_data.csv"
-eda_image_path = "./images/eda/churn_histogram.png"
+from constants import data_path, eda_image_path
 
 
 logging.basicConfig(
