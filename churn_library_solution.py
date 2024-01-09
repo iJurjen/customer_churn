@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from typing import List
 from sklearn.model_selection import train_test_split
 from constants import eda_image_folder
 from exceptions import NonBinaryTargetException
@@ -83,7 +84,8 @@ def perform_eda(df: pd.DataFrame) -> None:
         raise e
 
 
-def encoder_helper(df, category_lst, response='response'):
+def encoder_helper(df: pd.DataFrame, category_lst: List,
+                   response: str = 'Attrition_Flag'):
     """
     Helper function to turn each categorical column into a new column with
     proportion of churn for each category.
