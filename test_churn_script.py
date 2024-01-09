@@ -57,15 +57,20 @@ def test_import(import_data):
 @pytest.mark.xfail()
 def test_eda(perform_eda):
     """
-    test perform eda function
+    Test the perform_eda function.
+
+    Parameters:
+    perform_eda (function): The EDA function to be tested.
     """
     df = cls.import_data(data_path)
+
     try:
         perform_eda(df)
         assert os.path.exists(eda_image_folder)
         logging.info(f"EDA completed. Figures saved to: {eda_image_folder}")
-    except:
-        logging.error("EDA failed")
+    except Exception as e:
+        logging.error(f"EDA failed: {e}")
+        raise e
 
 
 @pytest.mark.xfail()
