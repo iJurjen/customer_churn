@@ -6,8 +6,11 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from constants import eda_image_folder
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+from constants import eda_image_folder
+from exceptions import NonBinaryTargetException
+
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
@@ -80,24 +83,40 @@ def perform_eda(df: pd.DataFrame) -> None:
         raise e
 
 
-def encoder_helper(df, category_lst, response):
+def encoder_helper(df, category_lst, response='response'):
     """
-    helper function to turn each categorical column into a new column with
-    propotion of churn for each category - associated with cell 15 from the
-    notebook
+    Helper function to turn each categorical column into a new column with
+    proportion of churn for each category.
 
-    input:
-            df: pandas dataframe
-            category_lst: list of columns that contain categorical features
-            response: string of response name [optional argument that could be used for naming variables or index y column]
+    Parameters:
+    df (pandas.DataFrame): DataFrame containing the data.
+    category_lst (list): List of columns that contain categorical features.
+    response (str): Name of the response column.
 
-    output:
-            df: pandas dataframe with new columns for
+    Returns:
+    pandas.DataFrame: DataFrame with new columns for each categorical feature,
+                      representing the proportion of the response.
     """
-    pass
+    # Iterate over each categorical column
+    for category in category_lst:
+        # Group by the category and calculate the mean of the response
+        category_grouped = df.groupby(category)[response].mean()
+
+        # Create a new column in df for this category
+        # The new column name is a combination of the category name and the response
+        new_column_name = f"{category}_{response}_prop"
+        df[new_column_name] = df[category].map(category_grouped)
+
+    return df
+
+# Example usage
+# Assuming you have a DataFrame 'data' and a list of categorical columns 'categories'
+# data = pd.DataFrame(...)
+# categories = ['category1', 'category2', ...]
+# modified_data = encoder_helper(data, categories, 'churn')
 
 
-def perform_feature_engineering(df, response):
+def perform_feature_engineering(df: pd.DataFrame, response: str = 'Attrition_Flag'):
     """
     input:
               df: pandas dataframe
@@ -109,6 +128,17 @@ def perform_feature_engineering(df, response):
               y_train: y training data
               y_test: y testing data
     """
+    unique_vals = df[response].unique()
+    if len(unique_vals) == 2:
+        y = df[response].apply(lambda val: 0 if val == unique_vals[0] else 1)
+    else:
+        raise NonBinaryTargetException(f"The target column '{response}' is not binary.")
+    X = pd.DataFrame()
+    keep_cols = ['Customer_Age']
+    X[keep_cols] = df[keep_cols]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+                                                        random_state=42)
+    return X_train, X_test, y_train, y_test
 
 
 def classification_report_image(y_train,

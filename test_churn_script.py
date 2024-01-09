@@ -1,9 +1,11 @@
 import os
 import logging
 import pytest
+import pandas as pd
 import churn_library_solution as cls
 from datetime import datetime
 from constants import data_path, eda_image_folder
+from exceptions import NonBinaryTargetException
 
 
 logging.basicConfig(
@@ -23,6 +25,11 @@ def perform_eda():
     return cls.perform_eda
 
 
+@pytest.fixture(scope="module")
+def perform_feature_engineering():
+    return cls.perform_feature_engineering
+
+
 def run_tests():
     logging.info("Starting tests at %s", datetime.now())
 
@@ -34,7 +41,6 @@ def test_import(import_data):
     """
     try:
         df = import_data(data_path)
-        logging.info("Testing import_data: SUCCESS")
     except FileNotFoundError as err:
         logging.error("Testing import_eda: The file wasn't found")
         raise err
@@ -53,8 +59,9 @@ def test_import(import_data):
         logging.error("Testing import_data: The file has missing values")
         raise err
 
+    logging.info("SUCCESS: data imported successfully")
 
-@pytest.mark.xfail()
+
 def test_eda(perform_eda):
     """
     Test the perform_eda function.
@@ -78,13 +85,41 @@ def test_encoder_helper(encoder_helper):
     """
     test encoder helper
     """
+    # Test with valid input
+    df_valid = pd.DataFrame({
+        'Attrition_Flag': ['Existing Customer', 'Attrited Customer', 'Existing Customer'],
+        'Other_Column': [1, 2, 3]
+    })
+    try:
+        X_train, X_test, y_train, y_test = encoder_helper(df_valid)
+        # Add assertions here to check if the output is as expected
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred with valid input: {e}")
 
+    # Test with invalid input (e.g., incorrect column name)
+    df_invalid = pd.DataFrame({
+        'Wrong_Column_Name': ['Existing Customer', 'Attrited Customer', 'Existing Customer'],
+        'Other_Column': [1, 2, 3]
+    })
+    with pytest.raises(NonBinaryTargetException):
+        encoder_helper(df_invalid)
 
-@pytest.mark.xfail()
+    # You can add more tests for different types of invalid inputs
+
 def test_perform_feature_engineering(perform_feature_engineering):
     """
-    test perform_feature_engineering
+    Test perform_feature_engineering
     """
+    df = cls.import_data(data_path)
+    try:
+        X_train, X_test, y_train, y_test = perform_feature_engineering(df, 'Gender')
+        # Add assertions here to check if the output is as expected
+    except Exception as e:
+        pytest.fail(f"Unexpected error occurred with valid input: {e}")
+
+    # Test with non-binary target column
+    with pytest.raises(NonBinaryTargetException):
+        perform_feature_engineering(df, 'Income_Category')
 
 
 @pytest.mark.xfail()
