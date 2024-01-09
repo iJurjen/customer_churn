@@ -3,7 +3,7 @@ import logging
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
-from constants import data_path, eda_image_path
+from constants import data_path, eda_image_folder
 
 
 logging.basicConfig(
@@ -53,20 +53,17 @@ def test_import(import_data):
         logging.error("Testing import_data: The file has missing values")
         raise err
 
-    #import_data.config.cache.set('cache_df', df)
-    return df
-
 
 @pytest.mark.xfail()
 def test_eda(perform_eda):
     """
     test perform eda function
     """
-    #df = import_data.config.cache.get('cache_df', None)
+    df = cls.import_data(data_path)
     try:
-        perform_eda(data)
-        assert os.path.exists(eda_image_path)
-        logging.info(f"EDA completed. Figure saved to: {eda_image_path}")
+        perform_eda(df)
+        assert os.path.exists(eda_image_folder)
+        logging.info(f"EDA completed. Figures saved to: {eda_image_folder}")
     except:
         logging.error("EDA failed")
 
@@ -94,6 +91,5 @@ def test_train_models(train_models):
 
 if __name__ == "__main__":
     run_tests()
-    data = test_import(cls.import_data)
-    print(data.head())
+    test_import(cls.import_data)
     test_eda(cls.perform_eda)

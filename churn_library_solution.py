@@ -5,7 +5,10 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+from constants import eda_image_folder
 from pathlib import Path
+
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -23,30 +26,58 @@ def import_data(pth: Path) -> pd.DataFrame:
     return df
 
 
+def save_plot(df, column, plot_type, file_name, folder=eda_image_folder, **kwargs):
+    """
+    Helper function to create and save a plot.
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to plot.
+    column (str): The column to plot.
+    plot_type (str): Type of plot (e.g., 'hist', 'bar', 'heatmap').
+    file_name (str): Name of the file to save the plot.
+    folder (str): Folder path to save the plot.
+    **kwargs: Additional keyword arguments for the plotting function.
+    """
+    plt.figure(figsize=(20, 10))
+
+    if plot_type == 'hist':
+        # Check if 'stat' is in kwargs for seaborn histplot
+        if 'stat' in kwargs:
+            sns.histplot(df[column], **kwargs)
+        else:
+            df[column].hist(**kwargs)
+    elif plot_type == 'bar':
+        df[column].value_counts('normalize').plot(kind='bar', **kwargs)
+    elif plot_type == 'heatmap':
+        sns.heatmap(df.corr(), **kwargs)
+
+    os.makedirs(folder, exist_ok=True)
+    plt.savefig(os.path.join(folder, file_name))
+    plt.close()
+
+
 def perform_eda(df: pd.DataFrame) -> None:
     """
-    perform eda on df and save figures to images folder
-    input:
-            df: pandas dataframe
+    Perform EDA on df and save figures to images folder.
 
-    output:
-            None
+    Parameters:
+    df (pd.DataFrame): pandas dataframe.
     """
     df['Churn'] = df['Attrition_Flag'].apply(
         lambda val: 0 if val == "Existing Customer" else 1)
-    plt.figure(figsize=(20, 10))
-    df['Churn'].hist()
 
-    # Ensure the "images" folder exists
-    images_folder = "./images/eda/"
-    os.makedirs(images_folder, exist_ok=True)
-
-    # Save the figure to the "images" folder
-    image_path = os.path.join(images_folder, "churn_histogram.png")
-    plt.savefig(image_path)
-
-    # Close the plot to release resources
-    plt.close()
+    try:
+        save_plot(df, 'Churn', 'hist', 'churn_distribution.png')
+        save_plot(df, 'Customer_Age', 'hist', 'customer_age_distribution.png')
+        save_plot(df, 'Marital_Status', 'bar',
+                  'marital_status_distribution.png')
+        save_plot(df, 'Total_Trans_Ct', 'hist',
+                  'total_transaction_distribution.png', stat='density',
+                  kde=True)
+        save_plot(df, None, 'heatmap', 'heatmap.png', annot=False,
+                  cmap='Dark2_r', linewidths=2)
+    except Exception as e:
+        raise e
 
 
 def encoder_helper(df, category_lst, response):
