@@ -1,7 +1,6 @@
 import os
 import logging
 import pytest
-import pandas as pd
 import churn_library_solution as cls
 from datetime import datetime
 from constants import data_path, eda_image_folder, category_list
@@ -79,7 +78,8 @@ def test_eda(perform_eda):
     try:
         perform_eda(df)
         assert os.path.exists(eda_image_folder)
-        logging.info(f"EDA completed. Figures saved to: {eda_image_folder}")
+        logging.info("SUCCESS: EDA completed. "
+                     f"Figures saved to {eda_image_folder}")
     except Exception as e:
         logging.error(f"EDA failed: {e}")
         raise e
@@ -90,25 +90,38 @@ def test_encoder_helper(encoder_helper):
     Test the encoder_helper function.
     """
 
-    # Assuming cls.import_data and data_path are defined elsewhere
+    # Creating data for testing
     df = cls.import_data(data_path)
+    df['Churn'] = df['Attrition_Flag'].apply(
+        lambda val: 0 if val == "Existing Customer" else 1)
+    test_value = df.groupby('Education_Level')['Churn'].mean()['College']
 
-    # Define the category list (assuming this is defined or known)
-    category_list = ['Category1', 'Category2', 'Category3']  # Example categories
+    # Define the category list
+    cols = df.columns
+    num_cols = df._get_numeric_data().columns
+    category_list = list(set(cols) - set(num_cols))
 
     # Apply the encoder_helper function
     try:
-        df_encoded = encoder_helper(df, category_list, response='response_column')
+        df_encoded = encoder_helper(df, category_list, response='Churn')
 
         # Check if new columns are added correctly
         for category in category_list:
-            expected_column = f"{category}_response_column_prop"
-            assert expected_column in df_encoded.columns, f"Column {expected_column} not found in DataFrame"
+            expected_column = f"{category}_Churn_prop"
+            assert expected_column in df_encoded.columns, \
+                f"Column {expected_column} not found in DataFrame"
 
-        print("All tests passed!")
+        # Check if the values are calculated correctly
+        assert df_encoded['Education_Level_Churn_prop'].dtype == 'float64', \
+            "Values are not calculated correctly"
+        assert set(df_encoded[df_encoded['Education_Level'] == 'College']
+                   ['Education_Level_Churn_prop']) == set([test_value]), \
+            "Values are not calculated correctly"
+
+        logging.info("SUCCESS: target encoding")
 
     except Exception as e:
-        print(f"Test failed: {e}")
+        logging.error(f"Target encoding failed: {e}")
 
 
 def test_perform_feature_engineering(perform_feature_engineering):
@@ -138,3 +151,4 @@ if __name__ == "__main__":
     run_tests()
     test_import(cls.import_data)
     test_eda(cls.perform_eda)
+    test_encoder_helper(cls.encoder_helper)

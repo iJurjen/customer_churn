@@ -85,7 +85,7 @@ def perform_eda(df: pd.DataFrame) -> None:
 
 
 def encoder_helper(df: pd.DataFrame, category_lst: List,
-                   response: str = 'Attrition_Flag'):
+                   response: str = 'Attrition_Flag') -> pd.DataFrame:
     """
     Helper function to turn each categorical column into a new column with
     proportion of churn for each category.
@@ -110,12 +110,6 @@ def encoder_helper(df: pd.DataFrame, category_lst: List,
         df[new_column_name] = df[category].map(category_grouped)
 
     return df
-
-# Example usage
-# Assuming you have a DataFrame 'data' and a list of categorical columns 'categories'
-# data = pd.DataFrame(...)
-# categories = ['category1', 'category2', ...]
-# modified_data = encoder_helper(data, categories, 'churn')
 
 
 def perform_feature_engineering(df: pd.DataFrame, response: str = 'Attrition_Flag'):
