@@ -3,7 +3,7 @@ import logging
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
-from constants import data_path, eda_image_folder, category_list
+from constants import data_path, eda_image_folder
 from exceptions import NonBinaryTargetException
 
 

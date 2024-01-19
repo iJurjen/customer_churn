@@ -7,9 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 from sklearn.model_selection import train_test_split
-from constants import eda_image_folder
+from constants import eda_image_folder, target, cat_columns, quant_columns
 from exceptions import NonBinaryTargetException
 
 
@@ -22,7 +22,7 @@ def import_data(pth: Path) -> pd.DataFrame:
     returns dataframe for the csv found at pth
 
     input:
-            pth: a path to the csv
+            pth: a path to the csv file
     output:
             df: pandas dataframe
     """
@@ -85,7 +85,7 @@ def perform_eda(df: pd.DataFrame) -> None:
 
 
 def encoder_helper(df: pd.DataFrame, category_lst: List,
-                   response: str = 'Attrition_Flag') -> pd.DataFrame:
+                   response: str = target) -> pd.DataFrame:
     """
     Helper function to turn each categorical column into a new column with
     proportion of churn for each category.
@@ -112,11 +112,12 @@ def encoder_helper(df: pd.DataFrame, category_lst: List,
     return df
 
 
-def perform_feature_engineering(df: pd.DataFrame, response: str = 'Attrition_Flag'):
+def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
+        Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]):
     """
     input:
               df: pandas dataframe
-              response: string of response name [optional argument that could be used for naming variables or index y column]
+              response: target variable
 
     output:
               X_train: X training data
@@ -129,9 +130,11 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = 'Attrition_Fla
         y = df[response].apply(lambda val: 0 if val == unique_vals[0] else 1)
     else:
         raise NonBinaryTargetException(f"The target column '{response}' is not binary.")
-    X = pd.DataFrame()
-    keep_cols = ['Customer_Age']
-    X[keep_cols] = df[keep_cols]
+    # check if response is in cat_columns
+    if response in cat_columns:
+        cat_columns.remove(response)
+    X = encoder_helper(df, cat_columns, response=y)   # Todo: fix this
+    X.drop(columns=cat_columns+[target], inplace=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
                                                         random_state=42)
     return X_train, X_test, y_train, y_test
