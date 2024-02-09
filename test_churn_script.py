@@ -3,7 +3,7 @@ import logging
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
-from constants import data_path, eda_image_folder
+from constants import data_path, eda_image_folder, cat_columns, quant_columns
 from exceptions import NonBinaryTargetException
 
 
@@ -103,19 +103,19 @@ def test_encoder_helper(encoder_helper):
 
     # Apply the encoder_helper function
     try:
-        df_encoded = encoder_helper(df, category_list, response='Churn')
+        df_encoded = encoder_helper(df, category_list, binary_target='Churn')
 
         # Check if new columns are added correctly
         for category in category_list:
-            expected_column = f"{category}_Churn_prop"
+            expected_column = f"{category}_encoded"
             assert expected_column in df_encoded.columns, \
                 f"Column {expected_column} not found in DataFrame"
 
         # Check if the values are calculated correctly
-        assert df_encoded['Education_Level_Churn_prop'].dtype == 'float64', \
+        assert df_encoded['Education_Level_encoded'].dtype == 'float64', \
             "Values are not calculated correctly"
         assert set(df_encoded[df_encoded['Education_Level'] == 'College']
-                   ['Education_Level_Churn_prop']) == set([test_value]), \
+                   ['Education_Level_encoded']) == set([test_value]), \
             "Values are not calculated correctly"
 
         logging.info("SUCCESS: target encoding")
@@ -131,7 +131,9 @@ def test_perform_feature_engineering(perform_feature_engineering):
     df = cls.import_data(data_path)
     try:
         X_train, X_test, y_train, y_test = perform_feature_engineering(df, 'Gender')
-        # Add assertions here to check if the output is as expected
+        # Check if the shape of the data is correct
+        assert X_train.shape[0] > len(cat_columns+quant_columns) - 1
+        logging.info("SUCCESS: feature engineering completed successfully.")
     except Exception as e:
         pytest.fail(f"Unexpected error occurred with valid input: {e}")
 
@@ -152,3 +154,4 @@ if __name__ == "__main__":
     test_import(cls.import_data)
     test_eda(cls.perform_eda)
     test_encoder_helper(cls.encoder_helper)
+    test_perform_feature_engineering(cls.perform_feature_engineering)

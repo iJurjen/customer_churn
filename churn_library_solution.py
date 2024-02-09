@@ -85,7 +85,7 @@ def perform_eda(df: pd.DataFrame) -> None:
 
 
 def encoder_helper(df: pd.DataFrame, category_lst: List,
-                   response: str = target) -> pd.DataFrame:
+                   binary_target: str) -> pd.DataFrame:
     """
     Helper function to turn each categorical column into a new column with
     proportion of churn for each category.
@@ -93,7 +93,7 @@ def encoder_helper(df: pd.DataFrame, category_lst: List,
     Parameters:
     df (pandas.DataFrame): DataFrame containing the data.
     category_lst (list): List of columns that contain categorical features.
-    response (str): Name of the response column.
+    binary_target (str): Name of the target column
 
     Returns:
     pandas.DataFrame: DataFrame with new columns for each categorical feature,
@@ -102,11 +102,10 @@ def encoder_helper(df: pd.DataFrame, category_lst: List,
     # Iterate over each categorical column
     for category in category_lst:
         # Group by the category and calculate the mean of the response
-        category_grouped = df.groupby(category)[response].mean()
+        category_grouped = df.groupby(category)[binary_target].mean()
 
-        # Create a new column in df for this category
-        # The new column name is a combination of the category name and the response
-        new_column_name = f"{category}_{response}_prop"
+        # Create a new column in df for enocoded category
+        new_column_name = f"{category}_encoded"
         df[new_column_name] = df[category].map(category_grouped)
 
     return df
@@ -125,16 +124,19 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
               y_train: y training data
               y_test: y testing data
     """
+    # check if response is binary
     unique_vals = df[response].unique()
     if len(unique_vals) == 2:
-        y = df[response].apply(lambda val: 0 if val == unique_vals[0] else 1)
+        # create binary target
+        df['binary_target'] = df[response].apply(lambda val: 0 if val == unique_vals[0] else 1)
     else:
         raise NonBinaryTargetException(f"The target column '{response}' is not binary.")
     # check if response is in cat_columns
     if response in cat_columns:
         cat_columns.remove(response)
-    X = encoder_helper(df, cat_columns, response=y)   # Todo: fix this
-    X.drop(columns=cat_columns+[target], inplace=True)
+    df_encoded = encoder_helper(df, cat_columns, binary_target='binary_target')
+    X = df_encoded[quant_columns + cat_columns]
+    y = df_encoded['binary_target']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
                                                         random_state=42)
     return X_train, X_test, y_train, y_test
@@ -189,3 +191,11 @@ def train_models(X_train, X_test, y_train, y_test):
               None
     """
     pass
+
+
+if __name__ == "__main__":
+    df = import_data(Path('data/bank_data.csv'))
+    perform_eda(df)
+    X_train, X_test, y_train, y_test = perform_feature_engineering(df)
+    train_models(X_train, X_test, y_train, y_test)
+    print('done')
