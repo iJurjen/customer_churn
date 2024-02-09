@@ -3,6 +3,7 @@
 
 # import libraries
 import os
+import joblib
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -11,7 +12,8 @@ from typing import List, Tuple
 from sklearn.model_selection import train_test_split
 from constants import eda_image_folder, target, cat_columns, quant_columns
 from exceptions import NonBinaryTargetException
-
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
@@ -135,7 +137,8 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
     if response in cat_columns:
         cat_columns.remove(response)
     df_encoded = encoder_helper(df, cat_columns, binary_target='binary_target')
-    X = df_encoded[quant_columns + cat_columns]
+    cat_columns_encoded = [col + '_encoded' for col in cat_columns if col]
+    X = df_encoded[quant_columns + cat_columns_encoded]
     y = df_encoded['binary_target']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
                                                         random_state=42)
@@ -190,12 +193,26 @@ def train_models(X_train, X_test, y_train, y_test):
     output:
               None
     """
-    pass
+    lrc = LogisticRegression(solver='lbfgs', max_iter=3000)
+    lrc.fit(X_train, y_train)
+
+    joblib.dump(lrc, './models/logistic_model.pkl')
+
+    y_train_preds_lr = lrc.predict(X_train)
+    y_test_preds_lr = lrc.predict(X_test)
+
+    # scores
+    print('logistic regression results')
+    print('test results')
+    print(classification_report(y_test, y_test_preds_lr))
+    print('train results')
+    print(classification_report(y_train, y_train_preds_lr))
 
 
 if __name__ == "__main__":
     df = import_data(Path('data/bank_data.csv'))
     perform_eda(df)
     X_train, X_test, y_train, y_test = perform_feature_engineering(df)
+    print(X_train)
     train_models(X_train, X_test, y_train, y_test)
     print('done')
