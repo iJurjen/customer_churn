@@ -1,4 +1,10 @@
-# library doc string
+""" This module contains functions for
+EDA
+Feature Engineering (including encoding of categorical variables)
+Model Training
+Prediction
+Model Evaluation
+"""
 
 
 # import libraries
@@ -35,7 +41,13 @@ def import_data(pth: Path) -> pd.DataFrame:
     return df
 
 
-def save_plot(df, column, plot_type, file_name, folder=eda_image_folder, **kwargs):
+def save_plot(
+        df,
+        column,
+        plot_type,
+        file_name,
+        folder=eda_image_folder,
+        **kwargs):
     """
     Helper function to create and save a plot.
 
@@ -133,9 +145,11 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
     unique_vals = df[response].unique()
     if len(unique_vals) == 2:
         # create binary target
-        df['binary_target'] = df[response].apply(lambda val: 0 if val == unique_vals[0] else 1)
+        df['binary_target'] = df[response].apply(
+            lambda val: 0 if val == unique_vals[0] else 1)
     else:
-        raise NonBinaryTargetException(f"The target column '{response}' is not binary.")
+        raise NonBinaryTargetException(
+            f"The target column '{response}' is not binary.")
     # check if response is in cat_columns
     if response in cat_columns:
         cat_columns.remove(response)
@@ -221,7 +235,6 @@ def feature_importance_plot(model, X_data, output_pth):
     output:
              None
     """
-    # Todo: test function and add to train
     # Calculate feature importances
     importances = model.best_estimator_.feature_importances_
     # Sort feature importances in descending order
@@ -247,7 +260,8 @@ def feature_importance_plot(model, X_data, output_pth):
     try:
         plt.savefig(output_pth, bbox_inches='tight')
         plt.close()
-        print(f"Classification report image saved successfully at {output_pth}")
+        print(
+            f"Classification report image saved successfully at {output_pth}")
     except Exception as e:
         print(
             f"An error occurred while saving the classification report image: {e}")
@@ -268,8 +282,8 @@ def train_models(X_train, X_test, y_train, y_test):
 
     # train and store Logistic Regression model
     lrc = LogisticRegression(solver='lbfgs', max_iter=3000)
-    # lrc.fit(X_train, y_train)
-    # joblib.dump(lrc, model_path + 'logistic_regression_classifier.pkl')
+    lrc.fit(X_train, y_train)
+    joblib.dump(lrc, model_path + 'logistic_regression_classifier.pkl')
 
     # train and store Random Forest model
     rfc = RandomForestClassifier(random_state=42)
@@ -279,13 +293,9 @@ def train_models(X_train, X_test, y_train, y_test):
         'max_depth': [4, 5, 100],
         'criterion': ['gini', 'entropy']
     }
-    # cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
-    # cv_rfc.fit(X_train, y_train)
-    # joblib.dump(cv_rfc, model_path + 'random_forest_classifier.pkl')
-
-    # reload models for predictions
-    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
-    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
+    cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+    cv_rfc.fit(X_train, y_train)
+    joblib.dump(cv_rfc, model_path + 'random_forest_classifier.pkl')
 
     # predictions logistic regression model
     y_train_preds_lr = lrc.predict(X_train)
@@ -328,9 +338,9 @@ def train_models(X_train, X_test, y_train, y_test):
 
 
 if __name__ == "__main__":
-    df = import_data(Path('data/bank_data.csv'))
-    perform_eda(df)
-    X_train, X_test, y_train, y_test = perform_feature_engineering(df)
+    data = import_data(Path('data/bank_data.csv'))
+    perform_eda(data)
+    train_data, test_data, train_labels, test_labels = perform_feature_engineering(data)
     print("training_models")
-    train_models(X_train, X_test, y_train, y_test)
+    train_models(train_data, test_data, train_labels, test_labels)
     print('done')

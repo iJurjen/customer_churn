@@ -1,5 +1,7 @@
 import os
 import logging
+
+import joblib
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
@@ -33,6 +35,10 @@ def encoder_helper():
 def perform_feature_engineering():
     return cls.perform_feature_engineering
 
+
+@pytest.fixture(scope="module")
+def train_models():
+    return cls.train_models
 
 def run_tests():
     logging.info("Starting tests at %s", datetime.now())
@@ -147,6 +153,9 @@ def test_train_models(train_models):
     """
     test train_models
     """
+    # reload models for predictions
+    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
+    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
 
 
 if __name__ == "__main__":
