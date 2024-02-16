@@ -10,7 +10,8 @@ import seaborn as sns
 from pathlib import Path
 from typing import List, Tuple
 from sklearn.model_selection import train_test_split
-from constants import eda_image_folder, target, cat_columns, quant_columns
+from constants import (eda_image_folder, model_results_folder,
+                       target, cat_columns, quant_columns)
 from exceptions import NonBinaryTargetException
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
@@ -165,7 +166,21 @@ def classification_report_image(y_train,
     output:
              None
     """
-    pass
+    plt.rc('figure', figsize=(5, 5))
+    plt.text(0.01, 1.25, str('Logistic Regression Train'), {'fontsize': 10},
+             fontproperties='monospace')
+    plt.text(0.01, 0.05, str(classification_report(y_train, y_train_preds_lr)),
+             {'fontsize': 10},
+             fontproperties='monospace')  # approach improved by OP -> monospace!
+    plt.text(0.01, 0.6, str('Logistic Regression Test'), {'fontsize': 10},
+             fontproperties='monospace')
+    plt.text(0.01, 0.7, str(classification_report(y_test, y_test_preds_lr)),
+             {'fontsize': 10},
+             fontproperties='monospace')  # approach improved by OP -> monospace!
+    plt.axis('off')
+    os.makedirs(model_results_folder, exist_ok=True)
+    plt.savefig(os.path.join(model_results_folder, "classification_report"))
+    plt.close()
 
 
 def feature_importance_plot(model, X_data, output_pth):
@@ -207,6 +222,16 @@ def train_models(X_train, X_test, y_train, y_test):
     print(classification_report(y_test, y_test_preds_lr))
     print('train results')
     print(classification_report(y_train, y_train_preds_lr))
+
+    y_train_preds_rf = None
+    y_test_preds_rf = None
+
+    classification_report_image(y_train,
+                                y_test,
+                                y_train_preds_lr,
+                                y_train_preds_rf,
+                                y_test_preds_lr,
+                                y_test_preds_rf)
 
 
 if __name__ == "__main__":
