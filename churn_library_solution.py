@@ -4,18 +4,20 @@
 # import libraries
 import os
 import joblib
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 from typing import List, Tuple
-from sklearn.model_selection import train_test_split
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
 from constants import (eda_image_folder, model_results_folder,
                        target, cat_columns, quant_columns)
 from exceptions import NonBinaryTargetException
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-
+from sklearn.metrics import classification_report, plot_roc_curve
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -146,14 +148,11 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
     return X_train, X_test, y_train, y_test
 
 
-def classification_report_image(y_train,
-                                y_test,
-                                y_train_preds_lr,
-                                y_train_preds_rf,
-                                y_test_preds_lr,
-                                y_test_preds_rf):
+def classification_report_image(y_train, y_test, y_train_preds_lr,
+                                y_train_preds_rf, y_test_preds_lr,
+                                y_test_preds_rf, model_results_folder):
     """
-    produces classification report for training and testing results and stores report as image
+    Produces classification report for training and testing results and stores report as image
     in images folder
     input:
             y_train: training response values
@@ -162,25 +161,53 @@ def classification_report_image(y_train,
             y_train_preds_rf: training predictions from random forest
             y_test_preds_lr: test predictions from logistic regression
             y_test_preds_rf: test predictions from random forest
+            model_results_folder: folder to store the classification report image
 
     output:
              None
     """
-    plt.rc('figure', figsize=(5, 5))
-    plt.text(0.01, 1.25, str('Logistic Regression Train'), {'fontsize': 10},
-             fontproperties='monospace')
-    plt.text(0.01, 0.05, str(classification_report(y_train, y_train_preds_lr)),
-             {'fontsize': 10},
-             fontproperties='monospace')  # approach improved by OP -> monospace!
-    plt.text(0.01, 0.6, str('Logistic Regression Test'), {'fontsize': 10},
-             fontproperties='monospace')
-    plt.text(0.01, 0.7, str(classification_report(y_test, y_test_preds_lr)),
-             {'fontsize': 10},
-             fontproperties='monospace')  # approach improved by OP -> monospace!
+    # Create a figure for the classification reports
+    fig, ax = plt.subplots(figsize=(10, 10))
+    plt.subplots_adjust(left=0.1, right=0.8, top=0.75,
+                        bottom=0.25)  # Adjust the top and bottom
+
+    # Add Logistic Regression Training classification report text to subplot
+    lr_train_report = classification_report(y_train, y_train_preds_lr)
+    fig.text(0.01, 0.3, 'Logistic Regression Train\n' + lr_train_report,
+             fontfamily='monospace')  # Adjust the vertical position
+
+    # Add Logistic Regression Testing classification report text to subplot
+    lr_test_report = classification_report(y_test, y_test_preds_lr)
+    fig.text(0.01, 0.1, 'Logistic Regression Test\n' + lr_test_report,
+             fontfamily='monospace')  # Adjust the vertical position
+
+    # Add Random Forest Training classification report text to subplot
+    rf_train_report = classification_report(y_train, y_train_preds_rf)
+    fig.text(0.01, 0.9, 'Random Forest Train\n' + rf_train_report,
+             fontfamily='monospace')  # Adjust the vertical position
+
+    # Add Random Forest Testing classification report text to subplot
+    rf_test_report = classification_report(y_test, y_test_preds_rf)
+    fig.text(0.01, 0.7, 'Random forest Test\n' + rf_test_report,
+             fontfamily='monospace')  # Adjust the vertical position
+
+    # Remove axes for a clean look
     plt.axis('off')
+
+    # Ensure the directory for saving the image exists
     os.makedirs(model_results_folder, exist_ok=True)
-    plt.savefig(os.path.join(model_results_folder, "classification_report"))
-    plt.close()
+
+    # Save the figure to the specified directory
+    try:
+        file_path = os.path.join(model_results_folder,
+                                 "classification_report.png")
+        plt.savefig(file_path, bbox_inches='tight')
+        plt.close()
+        print(f"Classification report image saved successfully at {file_path}")
+    except Exception as e:
+        print(
+            f"An error occurred while saving the classification report image: {e}")
+        plt.close()
 
 
 def feature_importance_plot(model, X_data, output_pth):
@@ -194,7 +221,27 @@ def feature_importance_plot(model, X_data, output_pth):
     output:
              None
     """
-    pass
+    # Todo: test function and add to train
+    # Calculate feature importances
+    importances = model.best_estimator_.feature_importances_
+    # Sort feature importances in descending order
+    indices = np.argsort(importances)[::-1]
+
+    # Rearrange feature names so they match the sorted feature importances
+    names = [X_data.columns[i] for i in indices]
+
+    # Create plot
+    plt.figure(figsize=(20, 5))
+
+    # Create plot title
+    plt.title("Feature Importance")
+    plt.ylabel('Importance')
+
+    # Add bars
+    plt.bar(range(X_data.shape[1]), importances[indices])
+
+    # Add feature names as x-axis labels
+    plt.xticks(range(X_data.shape[1]), names, rotation=90);
 
 
 def train_models(X_train, X_test, y_train, y_test):
@@ -216,28 +263,42 @@ def train_models(X_train, X_test, y_train, y_test):
     y_train_preds_lr = lrc.predict(X_train)
     y_test_preds_lr = lrc.predict(X_test)
 
-    # scores
-    print('logistic regression results')
-    print('test results')
-    print(classification_report(y_test, y_test_preds_lr))
-    print('train results')
-    print(classification_report(y_train, y_train_preds_lr))
+    rfc = RandomForestClassifier(random_state=42)
+    param_grid = {
+        'n_estimators': [200, 500],
+        'max_features': ['auto', 'sqrt'],
+        'max_depth': [4, 5, 100],
+        'criterion': ['gini', 'entropy']
+    }
+    cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+    cv_rfc.fit(X_train, y_train)
 
-    y_train_preds_rf = None
-    y_test_preds_rf = None
+    joblib.dump(lrc, './models/random_forest.pkl')
+
+    y_train_preds_rf = cv_rfc.best_estimator_.predict(X_train)
+    y_test_preds_rf = cv_rfc.best_estimator_.predict(X_test)
 
     classification_report_image(y_train,
                                 y_test,
                                 y_train_preds_lr,
                                 y_train_preds_rf,
                                 y_test_preds_lr,
-                                y_test_preds_rf)
+                                y_test_preds_rf,
+                                model_results_folder)
+
+    lrc_plot = plot_roc_curve(lrc, X_test, y_test)
+    plt.figure(figsize=(15, 8))
+    ax = plt.gca()
+    rfc_disp = plot_roc_curve(cv_rfc.best_estimator_, X_test, y_test, ax=ax,
+                              alpha=0.8)
+    lrc_plot.plot(ax=ax, alpha=0.8)
+    plt.show()   # Todo: save this file
 
 
 if __name__ == "__main__":
     df = import_data(Path('data/bank_data.csv'))
     perform_eda(df)
     X_train, X_test, y_train, y_test = perform_feature_engineering(df)
-    print(X_train)
+    print("training_models")
     train_models(X_train, X_test, y_train, y_test)
     print('done')
