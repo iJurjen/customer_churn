@@ -13,7 +13,7 @@ from typing import List, Tuple
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
-from constants import (eda_image_folder, model_results_folder,
+from constants import (eda_image_folder, model_path, model_results_folder,
                        target, cat_columns, quant_columns)
 from exceptions import NonBinaryTargetException
 from sklearn.linear_model import LogisticRegression
@@ -241,7 +241,17 @@ def feature_importance_plot(model, X_data, output_pth):
     plt.bar(range(X_data.shape[1]), importances[indices])
 
     # Add feature names as x-axis labels
-    plt.xticks(range(X_data.shape[1]), names, rotation=90);
+    plt.xticks(range(X_data.shape[1]), names, rotation=90)
+
+    # Save the figure to the specified directory
+    try:
+        plt.savefig(output_pth, bbox_inches='tight')
+        plt.close()
+        print(f"Classification report image saved successfully at {output_pth}")
+    except Exception as e:
+        print(
+            f"An error occurred while saving the classification report image: {e}")
+        plt.close()
 
 
 def train_models(X_train, X_test, y_train, y_test):
@@ -255,14 +265,13 @@ def train_models(X_train, X_test, y_train, y_test):
     output:
               None
     """
+
+    # train and store Logistic Regression model
     lrc = LogisticRegression(solver='lbfgs', max_iter=3000)
-    lrc.fit(X_train, y_train)
+    # lrc.fit(X_train, y_train)
+    # joblib.dump(lrc, model_path + 'logistic_regression_classifier.pkl')
 
-    joblib.dump(lrc, './models/logistic_model.pkl')
-
-    y_train_preds_lr = lrc.predict(X_train)
-    y_test_preds_lr = lrc.predict(X_test)
-
+    # train and store Random Forest model
     rfc = RandomForestClassifier(random_state=42)
     param_grid = {
         'n_estimators': [200, 500],
@@ -270,14 +279,23 @@ def train_models(X_train, X_test, y_train, y_test):
         'max_depth': [4, 5, 100],
         'criterion': ['gini', 'entropy']
     }
-    cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
-    cv_rfc.fit(X_train, y_train)
+    # cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+    # cv_rfc.fit(X_train, y_train)
+    # joblib.dump(cv_rfc, model_path + 'random_forest_classifier.pkl')
 
-    joblib.dump(lrc, './models/random_forest.pkl')
+    # reload models for predictions
+    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
+    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
 
-    y_train_preds_rf = cv_rfc.best_estimator_.predict(X_train)
-    y_test_preds_rf = cv_rfc.best_estimator_.predict(X_test)
+    # predictions logistic regression model
+    y_train_preds_lr = lrc.predict(X_train)
+    y_test_preds_lr = lrc.predict(X_test)
 
+    # predictions random forest model
+    y_train_preds_rf = cv_rfc.predict(X_train)
+    y_test_preds_rf = cv_rfc.predict(X_test)
+
+    # create classification report
     classification_report_image(y_train,
                                 y_test,
                                 y_train_preds_lr,
@@ -286,13 +304,27 @@ def train_models(X_train, X_test, y_train, y_test):
                                 y_test_preds_rf,
                                 model_results_folder)
 
+    # create ROC curves
     lrc_plot = plot_roc_curve(lrc, X_test, y_test)
     plt.figure(figsize=(15, 8))
     ax = plt.gca()
-    rfc_disp = plot_roc_curve(cv_rfc.best_estimator_, X_test, y_test, ax=ax,
+    rfc_disp = plot_roc_curve(cv_rfc, X_test, y_test, ax=ax,
                               alpha=0.8)
     lrc_plot.plot(ax=ax, alpha=0.8)
-    plt.show()   # Todo: save this file
+    try:
+        file_path = os.path.join(model_results_folder,
+                                 "ROC_curves.png")
+        plt.savefig(file_path, bbox_inches='tight')
+        plt.close()
+        print(f"ROC curves saved successfully at {file_path}")
+    except Exception as e:
+        print(
+            f"An error occurred while saving the classification report image: {e}")
+        plt.close()
+
+    # create feature importance plot
+    output_pth = os.path.join(model_results_folder, "Feature_importance.png")
+    feature_importance_plot(cv_rfc, X_train, output_pth)
 
 
 if __name__ == "__main__":

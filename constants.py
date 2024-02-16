@@ -3,7 +3,7 @@
 data_path = "./data/bank_data.csv"
 eda_image_folder = "./images/eda/"
 model_results_folder = "./images/results"
-# model_path = "./models/churn_model.pkl"
+model_path = "./models/"
 
 # Target variable
 target = 'Attrition_Flag'

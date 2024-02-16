@@ -1,4 +1,4 @@
-root - INFO - Starting tests at 2024-02-09 12:58:01.917740
+root - INFO - Starting tests at 2024-02-16 18:41:13.712953
 root - INFO - SUCCESS: data imported successfully
 root - INFO - SUCCESS: EDA completed. Figures saved to ./images/eda/
 root - INFO - SUCCESS: target encoding

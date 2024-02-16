@@ -132,7 +132,7 @@ def test_perform_feature_engineering(perform_feature_engineering):
     try:
         X_train, X_test, y_train, y_test = perform_feature_engineering(df, 'Gender')
         # Check if the shape of the data is correct
-        assert X_train.shape[0] > len(cat_columns+quant_columns) - 1
+        assert X_train.shape[1] == len(cat_columns+quant_columns)
         logging.info("SUCCESS: feature engineering completed successfully.")
     except Exception as e:
         pytest.fail(f"Unexpected error occurred with valid input: {e}")
