@@ -1,13 +1,13 @@
-# Customer Churn Prediction Project
+# Customer Churn Prediction
 
-- Project **Predict Customer Churn** of ML DevOps Engineer Nanodegree Udacity
+- This project is part of ML DevOps Engineer Nanodegree Udacity
 
 ## Project Description
-This project aims to predict customer churn using a dataset from a bank. It involves exploratory data analysis (EDA), feature engineering, and training machine learning models to classify customers as churned or not churned. The project uses Python and several libraries, including pandas, numpy, matplotlib, seaborn, and scikit-learn.
+This is a project to practice best coding practices.
 
 ## Project Structure
-- `churn_library_solution.py`: contains the functions used in the churn script  
-- `test_churn_script.py`: contains the unit tests for the functions in churn_library_solution.py
+- `churn_library.py`: contains the functions used in the churn script  
+- `churn_script_logging_and_tests.py`: contains the unit tests for the functions in churn_library_solution.py
 - `constants.py`: Contains constants used across the project, such as file paths and column names.
 - `data/`: Directory containing the dataset used for the project.
 - `models/`: Directory where trained models are saved.
@@ -17,7 +17,7 @@ This project aims to predict customer churn using a dataset from a bank. It invo
 ## Running Files
 In terminal, run the following command: 
 ```bash
-python churn_library_solution.py
+python churn_library.py
 ```
 This will perform the following steps:
 - Import the dataset.
@@ -28,13 +28,13 @@ This will perform the following steps:
  
 ## For testing:
 ```bash
-python test_churn_script.py 
+python churn_script_logging_and_tests.py 
 ``` 
 - `logs/`: Running the test script creates a log file in
 
 ## Testing with Pytest:
 ```bash
-pytest test_churn_script.py
+pytest churn_script_logging_and_tests.py
 ```
 
 

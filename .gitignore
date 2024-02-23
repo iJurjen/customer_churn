@@ -2,8 +2,4 @@
 __pycache__/
 Guide.ipynb
 churn_notebook.ipynb
-churn_library.py
-churn_script_logging_and_tests.py
-data/
-models/
 requirements_py3.6.txt
