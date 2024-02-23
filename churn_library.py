@@ -9,21 +9,21 @@ Model Evaluation
 
 # import libraries
 import os
+from pathlib import Path
+from typing import List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
-from typing import List, Tuple
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, plot_roc_curve
 from constants import (eda_image_folder, model_path, model_results_folder,
                        target, cat_columns, quant_columns)
 from exceptions import NonBinaryTargetException
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, plot_roc_curve
+
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -35,14 +35,14 @@ def import_data(pth: Path) -> pd.DataFrame:
     input:
             pth: a path to the csv file
     output:
-            df: pandas dataframe
+            data: pandas dataframe
     """
-    df = pd.read_csv(pth)
-    return df
+    data = pd.read_csv(pth)
+    return data
 
 
 def save_plot(
-        df,
+        data,
         column,
         plot_type,
         file_name,
@@ -64,44 +64,48 @@ def save_plot(
     if plot_type == 'hist':
         # Check if 'stat' is in kwargs for seaborn histplot
         if 'stat' in kwargs:
-            sns.histplot(df[column], **kwargs)
+            sns.histplot(data[column], **kwargs)
         else:
-            df[column].hist(**kwargs)
+            data[column].hist(**kwargs)
     elif plot_type == 'bar':
-        df[column].value_counts('normalize').plot(kind='bar', **kwargs)
+        data[column].value_counts('normalize').plot(kind='bar', **kwargs)
     elif plot_type == 'heatmap':
-        sns.heatmap(df.corr(), **kwargs)
+        sns.heatmap(data.corr(), **kwargs)
 
     os.makedirs(folder, exist_ok=True)
     plt.savefig(os.path.join(folder, file_name))
     plt.close()
 
 
-def perform_eda(df: pd.DataFrame) -> None:
+def perform_eda(data: pd.DataFrame) -> None:
     """
     Perform EDA on df and save figures to images folder.
 
     Parameters:
     df (pd.DataFrame): pandas dataframe.
     """
-    df['Churn'] = df['Attrition_Flag'].apply(
+    data['Churn'] = data['Attrition_Flag'].apply(
         lambda val: 0 if val == "Existing Customer" else 1)
 
     try:
-        save_plot(df, 'Churn', 'hist', 'churn_distribution.png')
-        save_plot(df, 'Customer_Age', 'hist', 'customer_age_distribution.png')
-        save_plot(df, 'Marital_Status', 'bar',
+        save_plot(data, 'Churn', 'hist', 'churn_distribution.png')
+        save_plot(
+            data,
+            'Customer_Age',
+            'hist',
+            'customer_age_distribution.png')
+        save_plot(data, 'Marital_Status', 'bar',
                   'marital_status_distribution.png')
-        save_plot(df, 'Total_Trans_Ct', 'hist',
+        save_plot(data, 'Total_Trans_Ct', 'hist',
                   'total_transaction_distribution.png', stat='density',
                   kde=True)
-        save_plot(df, None, 'heatmap', 'heatmap.png', annot=False,
+        save_plot(data, None, 'heatmap', 'heatmap.png', annot=False,
                   cmap='Dark2_r', linewidths=2)
-    except Exception as e:
-        raise e
+    except Exception as error:
+        raise error
 
 
-def encoder_helper(df: pd.DataFrame, category_lst: List,
+def encoder_helper(data: pd.DataFrame, category_lst: List,
                    binary_target: str) -> pd.DataFrame:
     """
     Helper function to turn each categorical column into a new column with
@@ -119,33 +123,36 @@ def encoder_helper(df: pd.DataFrame, category_lst: List,
     # Iterate over each categorical column
     for category in category_lst:
         # Group by the category and calculate the mean of the response
-        category_grouped = df.groupby(category)[binary_target].mean()
+        category_grouped = data.groupby(category)[binary_target].mean()
 
         # Create a new column in df for enocoded category
         new_column_name = f"{category}_encoded"
-        df[new_column_name] = df[category].map(category_grouped)
+        data[new_column_name] = data[category].map(category_grouped)
 
-    return df
+    return data
 
 
-def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
-        Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]):
+def perform_feature_engineering(data: pd.DataFrame,
+                                response: str = target) -> (Tuple[pd.DataFrame,
+                                                                  pd.DataFrame,
+                                                                  pd.Series,
+                                                                  pd.Series]):
     """
     input:
               df: pandas dataframe
               response: target variable
 
     output:
-              X_train: X training data
-              X_test: X testing data
-              y_train: y training data
-              y_test: y testing data
+              train_data: encoded_data training data
+              test_data: encoded_data testing data
+              y_train: binary_target training data
+              y_test: binary_target testing data
     """
     # check if response is binary
-    unique_vals = df[response].unique()
+    unique_vals = data[response].unique()
     if len(unique_vals) == 2:
         # create binary target
-        df['binary_target'] = df[response].apply(
+        data['binary_target'] = data[response].apply(
             lambda val: 0 if val == unique_vals[0] else 1)
     else:
         raise NonBinaryTargetException(
@@ -153,18 +160,19 @@ def perform_feature_engineering(df: pd.DataFrame, response: str = target) -> (
     # check if response is in cat_columns
     if response in cat_columns:
         cat_columns.remove(response)
-    df_encoded = encoder_helper(df, cat_columns, binary_target='binary_target')
+    df_encoded = encoder_helper(
+        data, cat_columns, binary_target='binary_target')
     cat_columns_encoded = [col + '_encoded' for col in cat_columns if col]
-    X = df_encoded[quant_columns + cat_columns_encoded]
-    y = df_encoded['binary_target']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
-                                                        random_state=42)
-    return X_train, X_test, y_train, y_test
+    encoded_data = df_encoded[quant_columns + cat_columns_encoded]
+    binary_target = df_encoded['binary_target']
+    train_data, test_data, y_train, y_test = train_test_split(
+        encoded_data, binary_target, test_size=0.3, random_state=42)
+    return train_data, test_data, y_train, y_test
 
 
 def classification_report_image(y_train, y_test, y_train_preds_lr,
                                 y_train_preds_rf, y_test_preds_lr,
-                                y_test_preds_rf, model_results_folder):
+                                y_test_preds_rf, results_folder):
     """
     Produces classification report for training and testing results and stores report as image
     in images folder
@@ -175,7 +183,7 @@ def classification_report_image(y_train, y_test, y_train_preds_lr,
             y_train_preds_rf: training predictions from random forest
             y_test_preds_lr: test predictions from logistic regression
             y_test_preds_rf: test predictions from random forest
-            model_results_folder: folder to store the classification report image
+            results_folder: folder to store the classification report image
 
     output:
              None
@@ -209,22 +217,22 @@ def classification_report_image(y_train, y_test, y_train_preds_lr,
     plt.axis('off')
 
     # Ensure the directory for saving the image exists
-    os.makedirs(model_results_folder, exist_ok=True)
+    os.makedirs(results_folder, exist_ok=True)
 
     # Save the figure to the specified directory
     try:
-        file_path = os.path.join(model_results_folder,
+        file_path = os.path.join(results_folder,
                                  "classification_report.png")
         plt.savefig(file_path, bbox_inches='tight')
         plt.close()
         print(f"Classification report image saved successfully at {file_path}")
-    except Exception as e:
+    except Exception as error:
         print(
-            f"An error occurred while saving the classification report image: {e}")
+            f"An error occurred while saving the classification report image: {error}")
         plt.close()
 
 
-def feature_importance_plot(model, X_data, output_pth):
+def feature_importance_plot(model, train_data, output_pth):
     """
     creates and stores the feature importances in pth
     input:
@@ -241,7 +249,7 @@ def feature_importance_plot(model, X_data, output_pth):
     indices = np.argsort(importances)[::-1]
 
     # Rearrange feature names so they match the sorted feature importances
-    names = [X_data.columns[i] for i in indices]
+    names = [train_data.columns[i] for i in indices]
 
     # Create plot
     plt.figure(figsize=(20, 5))
@@ -251,10 +259,10 @@ def feature_importance_plot(model, X_data, output_pth):
     plt.ylabel('Importance')
 
     # Add bars
-    plt.bar(range(X_data.shape[1]), importances[indices])
+    plt.bar(range(train_data.shape[1]), importances[indices])
 
     # Add feature names as x-axis labels
-    plt.xticks(range(X_data.shape[1]), names, rotation=90)
+    plt.xticks(range(train_data.shape[1]), names, rotation=90)
 
     # Save the figure to the specified directory
     try:
@@ -262,13 +270,13 @@ def feature_importance_plot(model, X_data, output_pth):
         plt.close()
         print(
             f"Classification report image saved successfully at {output_pth}")
-    except Exception as e:
+    except Exception as error:
         print(
-            f"An error occurred while saving the classification report image: {e}")
+            f"An error occurred while saving the classification report image: {error}")
         plt.close()
 
 
-def train_models(X_train, X_test, y_train, y_test):
+def train_models(train_data, test_data, y_train, y_test):
     """
     train, store model results: images + scores, and store models
     input:
@@ -282,7 +290,7 @@ def train_models(X_train, X_test, y_train, y_test):
 
     # train and store Logistic Regression model
     lrc = LogisticRegression(solver='lbfgs', max_iter=3000)
-    lrc.fit(X_train, y_train)
+    lrc.fit(train_data, y_train)
     joblib.dump(lrc, model_path + 'logistic_regression_classifier.pkl')
 
     # train and store Random Forest model
@@ -294,16 +302,16 @@ def train_models(X_train, X_test, y_train, y_test):
         'criterion': ['gini', 'entropy']
     }
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
-    cv_rfc.fit(X_train, y_train)
+    cv_rfc.fit(train_data, y_train)
     joblib.dump(cv_rfc, model_path + 'random_forest_classifier.pkl')
 
     # predictions logistic regression model
-    y_train_preds_lr = lrc.predict(X_train)
-    y_test_preds_lr = lrc.predict(X_test)
+    y_train_preds_lr = lrc.predict(train_data)
+    y_test_preds_lr = lrc.predict(test_data)
 
     # predictions random forest model
-    y_train_preds_rf = cv_rfc.predict(X_train)
-    y_test_preds_rf = cv_rfc.predict(X_test)
+    y_train_preds_rf = cv_rfc.predict(train_data)
+    y_test_preds_rf = cv_rfc.predict(test_data)
 
     # create classification report
     classification_report_image(y_train,
@@ -315,10 +323,10 @@ def train_models(X_train, X_test, y_train, y_test):
                                 model_results_folder)
 
     # create ROC curves
-    lrc_plot = plot_roc_curve(lrc, X_test, y_test)
+    lrc_plot = plot_roc_curve(lrc, test_data, y_test)
     plt.figure(figsize=(15, 8))
     ax = plt.gca()
-    rfc_disp = plot_roc_curve(cv_rfc, X_test, y_test, ax=ax,
+    rfc_disp = plot_roc_curve(cv_rfc, test_data, y_test, ax=ax,
                               alpha=0.8)
     lrc_plot.plot(ax=ax, alpha=0.8)
     try:
@@ -327,20 +335,21 @@ def train_models(X_train, X_test, y_train, y_test):
         plt.savefig(file_path, bbox_inches='tight')
         plt.close()
         print(f"ROC curves saved successfully at {file_path}")
-    except Exception as e:
+    except Exception as error:
         print(
-            f"An error occurred while saving the classification report image: {e}")
+            f"An error occurred while saving the classification report image: {error}")
         plt.close()
 
     # create feature importance plot
     output_pth = os.path.join(model_results_folder, "Feature_importance.png")
-    feature_importance_plot(cv_rfc, X_train, output_pth)
+    feature_importance_plot(cv_rfc, train_data, output_pth)
 
 
 if __name__ == "__main__":
-    data = import_data(Path('data/bank_data.csv'))
-    perform_eda(data)
-    train_data, test_data, train_labels, test_labels = perform_feature_engineering(data)
+    bank_data = import_data(Path('data/bank_data.csv'))
+    perform_eda(bank_data)
+    bank_data_train, bank_data_test, train_labels, test_labels = perform_feature_engineering(
+        bank_data)
     print("training_models")
-    train_models(train_data, test_data, train_labels, test_labels)
+    train_models(bank_data_train, bank_data_test, train_labels, test_labels)
     print('done')
