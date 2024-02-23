@@ -1,6 +1,6 @@
 import os
 import logging
-
+import unittest
 import joblib
 import pytest
 import churn_library_solution as cls
@@ -39,6 +39,7 @@ def perform_feature_engineering():
 @pytest.fixture(scope="module")
 def train_models():
     return cls.train_models
+
 
 def run_tests():
     logging.info("Starting tests at %s", datetime.now())
@@ -148,51 +149,73 @@ def test_perform_feature_engineering(perform_feature_engineering):
         perform_feature_engineering(df, 'Income_Category')
 
 
-@pytest.mark.xfail()
+# def test_train_models(train_models):
+#     """
+#     Test models are trained and can make predictions.
+#     """
+#     full_data = cls.import_data(data_path)
+#     test_data = full_data.sample(frac=0.1, random_state=42)
+#     X_train, X_test, y_train, y_test = cls.perform_feature_engineering(test_data)
+#
+#     # test train_models
+#     train_models(X_train, X_test, y_train, y_test)
+#
+#     # Assert models were trained and saved correctly
+#     logistic_regression_model_path = os.path.join(model_path, "logistic_regression_classifier.pkl")
+#     random_forest_model_path = os.path.join(model_path, "random_forest_classifier.pkl")
+#
+#     assert os.path.exists(logistic_regression_model_path), "Logistic regression model file not found."
+#     assert os.path.exists(random_forest_model_path), "Random forest model file not found."
+#
+#     # Load models and assert they can make predictions
+#     lrc = joblib.load(logistic_regression_model_path)
+#     cv_rfc = joblib.load(random_forest_model_path)
+#
+#     assert lrc.predict(X_test) is not None, "Logistic regression model failed to make predictions."
+#     assert cv_rfc.predict(X_test) is not None, "Random forest model failed to make predictions."
+#
+#     logging.info("SUCCESS: Models trained and predictions made successfully.")
+
+
 def test_train_models(train_models):
     """
-    test train_models
+    Test models are trained and can make predictions.
     """
-    # reload models for predictions
-    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
-    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
+    try:
+        full_data = cls.import_data(data_path)
+        test_data = full_data.sample(frac=0.1, random_state=42)
+        X_train, X_test, y_train, y_test = cls.perform_feature_engineering(test_data)
 
-import unittest
-from churn_library_solution import train_models
+        # test train_models
+        train_models(X_train, X_test, y_train, y_test)
 
-class TestTrainModels(unittest.TestCase):
+        # Assert models were trained and saved correctly
+        logistic_regression_model_path = os.path.join(model_path, "logistic_regression_classifier.pkl")
+        random_forest_model_path = os.path.join(model_path, "random_forest_classifier.pkl")
 
-  def setUp(self):
-    # load test data
-    full_data = cls.import_data(data_path)
-    test_data = full_data.sample(frac=0.1, random_state=42)
-    self.X_train, self.X_test, self.y_train, self.y_test = cls.perform_feature_engineering(test_data)
+        assert os.path.exists(logistic_regression_model_path), "Logistic regression model file not found."
+        assert os.path.exists(random_forest_model_path), "Random forest model file not found."
 
-  def test_models_train(self):
-    """Test models are trained"""
-    train_models(self.X_train, self.X_test, self.y_train, self.y_test)
-    
-    # assert models were trained
-    self.assertIsNotNone("model_path/logistic_regression_classifier") 
-    self.assertIsNotNone("model_path/random_forest_classifier")
+        # Load models and assert they can make predictions
+        lrc = joblib.load(logistic_regression_model_path)
+        cv_rfc = joblib.load(random_forest_model_path)
 
-    # assert models can be loaded from files
-    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
-    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
+        assert lrc.predict(X_test) is not None, "Logistic regression model failed to make predictions."
+        assert cv_rfc.predict(X_test) is not None, "Random forest model failed to make predictions."
 
-    # assert models can make predictions
-    self.assertIsNotNone(lrc.predict(self.X_test))
-    self.assertIsNotNone(cv_rfc.predict(self.X_test))
-
-    logging.info("SUCCESS: train_models")
-
-if __name__ == '__main__':
-  unittest.main()
+        logging.info("SUCCESS: Models trained and predictions made successfully.")
+    except AssertionError as e:
+        logging.error(f"Assertion error: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        raise
 
 
-# if __name__ == "__main__":
-#     run_tests()
-#     test_import(cls.import_data)
-#     test_eda(cls.perform_eda)
-#     test_encoder_helper(cls.encoder_helper)
-#     test_perform_feature_engineering(cls.perform_feature_engineering)
+if __name__ == "__main__":
+    run_tests()
+    test_import(cls.import_data)
+    test_eda(cls.perform_eda)
+    test_encoder_helper(cls.encoder_helper)
+    test_perform_feature_engineering(cls.perform_feature_engineering)
+    test_train_models(cls.train_models)

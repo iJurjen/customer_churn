@@ -36,3 +36,23 @@ python test_churn_script.py
 ```bash
 pytest test_churn_script.py
 ```
+
+
+## Logging
+
+### Log File Overview
+
+The library uses Python's built-in `logging` module to log its operations. Logs are saved to `./logs/churn_library.log`, providing a detailed record of the library's execution, including successful operations and any errors or warnings encountered.
+
+#### Examples of Log Messages
+
+- **INFO**: Indicates successful execution of a function.
+  ```
+  root - INFO - SUCCESS: data imported successfully
+  ```
+- **ERROR**: Indicates an error occurred during execution.
+  ```
+  root - ERROR - Target encoding failed: 'Churn' column not found
+  ```
+
+Reviewing the log file can help diagnose issues, verify successful operations, and understand the library's workflow.

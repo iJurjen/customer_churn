@@ -1,5 +1,6 @@
-root - INFO - Starting tests at 2024-02-16 18:52:41.302424
+root - INFO - Starting tests at 2024-02-23 13:46:37.727933
 root - INFO - SUCCESS: data imported successfully
 root - INFO - SUCCESS: EDA completed. Figures saved to ./images/eda/
 root - INFO - SUCCESS: target encoding
 root - INFO - SUCCESS: feature engineering completed successfully.
+root - INFO - SUCCESS: Models trained and predictions made successfully.
