@@ -5,7 +5,7 @@ import joblib
 import pytest
 import churn_library_solution as cls
 from datetime import datetime
-from constants import data_path, eda_image_folder, cat_columns, quant_columns
+from constants import data_path, eda_image_folder, cat_columns, quant_columns, model_path
 from exceptions import NonBinaryTargetException
 
 
@@ -157,10 +157,42 @@ def test_train_models(train_models):
     lrc = joblib.load('./models/logistic_regression_classifier.pkl')
     cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
 
+import unittest
+from churn_library_solution import train_models
 
-if __name__ == "__main__":
-    run_tests()
-    test_import(cls.import_data)
-    test_eda(cls.perform_eda)
-    test_encoder_helper(cls.encoder_helper)
-    test_perform_feature_engineering(cls.perform_feature_engineering)
+class TestTrainModels(unittest.TestCase):
+
+  def setUp(self):
+    # load test data
+    full_data = cls.import_data(data_path)
+    test_data = full_data.sample(frac=0.1, random_state=42)
+    self.X_train, self.X_test, self.y_train, self.y_test = cls.perform_feature_engineering(test_data)
+
+  def test_models_train(self):
+    """Test models are trained"""
+    train_models(self.X_train, self.X_test, self.y_train, self.y_test)
+    
+    # assert models were trained
+    self.assertIsNotNone("model_path/logistic_regression_classifier") 
+    self.assertIsNotNone("model_path/random_forest_classifier")
+
+    # assert models can be loaded from files
+    lrc = joblib.load('./models/logistic_regression_classifier.pkl')
+    cv_rfc = joblib.load('./models/random_forest_classifier.pkl')
+
+    # assert models can make predictions
+    self.assertIsNotNone(lrc.predict(self.X_test))
+    self.assertIsNotNone(cv_rfc.predict(self.X_test))
+
+    logging.info("SUCCESS: train_models")
+
+if __name__ == '__main__':
+  unittest.main()
+
+
+# if __name__ == "__main__":
+#     run_tests()
+#     test_import(cls.import_data)
+#     test_eda(cls.perform_eda)
+#     test_encoder_helper(cls.encoder_helper)
+#     test_perform_feature_engineering(cls.perform_feature_engineering)
