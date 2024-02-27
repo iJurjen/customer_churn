@@ -1,9 +1,15 @@
 # Customer Churn Prediction
 
 - This project is part of ML DevOps Engineer Nanodegree Udacity
+- https://www.udacity.com/course/machine-learning-dev-ops-engineer-nanodegree--nd0821
 
 ## Project Description
 This is a project to practice best coding practices.
+- Writing clean and modular code
+- Refactoring code
+- Optimizing code to be more efficient
+- Writing documentation
+- Following PEP8 & Linting
 
 ## Project Structure
 - `churn_library.py`: contains the functions used in the churn script  
@@ -54,5 +60,3 @@ The library uses Python's built-in `logging` module to log its operations. Logs 
   ```
   root - ERROR - Target encoding failed: 'Churn' column not found
   ```
-
-Reviewing the log file can help diagnose issues, verify successful operations, and understand the library's workflow.
