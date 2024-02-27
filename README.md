@@ -19,6 +19,7 @@ This is a project to practice best coding practices.
 - `models/`: Directory where trained models are saved.
 - `images/eda/`: Directory where EDA images are saved.
 - `images/results/`: Directory where model results and feature importance images are saved.
+- `logs/`: Directory for log information, so it can be viewed post the run of the churn_script_logging_and_tests.py script.
 
 ## Running Files
 In terminal, run the following command: 
