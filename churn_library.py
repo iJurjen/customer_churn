@@ -269,10 +269,10 @@ def feature_importance_plot(model, train_data, output_pth):
         plt.savefig(output_pth, bbox_inches='tight')
         plt.close()
         print(
-            f"Classification report image saved successfully at {output_pth}")
+            f"Feature importance plot saved successfully at {output_pth}")
     except Exception as error:
         print(
-            f"An error occurred while saving the classification report image: {error}")
+            f"An error occurred while saving the feature importance plot: {error}")
         plt.close()
 
 

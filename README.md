@@ -37,7 +37,7 @@ This will perform the following steps:
 ```bash
 python churn_script_logging_and_tests.py 
 ``` 
-- `logs/`: Running the test script creates a log file in
+- `logs/`: Running the test script creates a log file.
 
 ## Testing with Pytest:
 ```bash

@@ -123,21 +123,21 @@ def test_import(import_data):
     other test functions
     """
     try:
-        df = import_data(data_path)
+        test_data = import_data(data_path)
     except FileNotFoundError as err:
         logging.error("Testing import_eda: The file wasn't found")
         raise err
 
     try:
-        assert df.shape[0] > 0
-        assert df.shape[1] > 0
+        assert test_data.shape[0] > 0
+        assert test_data.shape[1] > 0
     except AssertionError as err:
         logging.error("Testing import_data: The file doesn't appear to have "
                       "rows and columns")
         raise err
 
     try:
-        assert df.isnull().sum().sum() == 0
+        assert test_data.isnull().sum().sum() == 0
     except AssertionError as err:
         logging.error("Testing import_data: The file has missing values")
         raise err
@@ -152,16 +152,17 @@ def test_eda(perform_eda):
     Parameters:
     perform_eda (function): The EDA function to be tested.
     """
-    df = cls.import_data(data_path)
+    test_data = cls.import_data(data_path)
 
     try:
-        perform_eda(df)
+        perform_eda(test_data)
         assert os.path.exists(eda_image_folder)
-        logging.info("SUCCESS: EDA completed. "
-                     f"Figures saved to {eda_image_folder}")
-    except Exception as e:
-        logging.error(f"EDA failed: {e}")
-        raise e
+        logging.info("SUCCESS: EDA completed. Figures saved to %s",
+                     eda_image_folder)
+
+    except Exception as error:
+        logging.error("EDA failed: %s", error)
+        raise error
 
 
 def test_encoder_helper(encoder_helper):
@@ -170,19 +171,19 @@ def test_encoder_helper(encoder_helper):
     """
 
     # Creating data for testing
-    df = cls.import_data(data_path)
-    df['Churn'] = df['Attrition_Flag'].apply(
+    test_data = cls.import_data(data_path)
+    test_data['Churn'] = test_data['Attrition_Flag'].apply(
         lambda val: 0 if val == "Existing Customer" else 1)
-    test_value = df.groupby('Education_Level')['Churn'].mean()['College']
+    test_value = test_data.groupby('Education_Level')['Churn'].mean()['College']
 
     # Define the category list
-    cols = df.columns
-    num_cols = df._get_numeric_data().columns
+    cols = test_data.columns
+    num_cols = test_data._get_numeric_data().columns
     category_list = list(set(cols) - set(num_cols))
 
     # Apply the encoder_helper function
     try:
-        df_encoded = encoder_helper(df, category_list, binary_target='Churn')
+        df_encoded = encoder_helper(test_data, category_list, binary_target='Churn')
 
         # Check if new columns are added correctly
         for category in category_list:
@@ -199,27 +200,27 @@ def test_encoder_helper(encoder_helper):
 
         logging.info("SUCCESS: target encoding")
 
-    except Exception as e:
-        logging.error(f"Target encoding failed: {e}")
+    except Exception as error:
+        logging.error("Target encoding failed: %s", error)
 
 
 def test_perform_feature_engineering(perform_feature_engineering):
     """
     Test perform_feature_engineering
     """
-    df = cls.import_data(data_path)
+    test_data = cls.import_data(data_path)
     try:
         X_train, _, _, _t = perform_feature_engineering(
-            df, 'Gender')
+            test_data, 'Gender')
         # Check if the shape of the data is correct
         assert X_train.shape[1] == len(cat_columns + quant_columns)
         logging.info("SUCCESS: feature engineering completed successfully.")
-    except Exception as e:
-        pytest.fail(f"Unexpected error occurred with valid input: {e}")
+    except Exception as error:
+        pytest.fail(f"Unexpected error occurred with valid input: {error}")
 
     # Test with non-binary target column
     with pytest.raises(NonBinaryTargetException):
-        perform_feature_engineering(df, 'Income_Category')
+        perform_feature_engineering(test_data, 'Income_Category')
 
 
 def test_train_models(train_models):
@@ -257,11 +258,11 @@ def test_train_models(train_models):
 
         logging.info(
             "SUCCESS: Models trained and predictions made successfully.")
-    except AssertionError as e:
-        logging.error(f"Assertion error: {e}")
+    except AssertionError as error:
+        logging.error("Assertion error: %s", error)
         raise
-    except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+    except Exception as error:
+        logging.error("An unexpected error occurred: %s", error)
         raise
 
 
